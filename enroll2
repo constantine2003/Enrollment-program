@@ -1,0 +1,165 @@
+using System;
+using System.Collections.Generic;
+
+abstract class EnrollmentProgram
+{
+    public abstract void DisplayMenu();
+    public abstract void Start();
+}
+
+class StudentEnrollment : EnrollmentProgram
+{
+    private List<Student> students = new List<Student>();
+    private List<Course> courses = new List<Course>();
+
+    public StudentEnrollment()
+    {
+
+        courses.Add(new Course("BS in Computer Science", 2000, "Programming, Algorithms, Data Structures"));
+        courses.Add(new Course("BS in Biology", 1800, "Genetics, Ecology, Physiology"));
+        courses.Add(new Course("BS in Business Administration", 2200, "Management, Marketing, Finance"));
+        courses.Add(new Course("BS in Civil Engineering", 2500, "Structural Engineering, Geotechnical Engineering"));
+        courses.Add(new Course("BS in Computer Engineering", 2400, "Digital Systems, Computer Architecture"));
+        courses.Add(new Course("BS in Information Technology (IT)", 2100, "Network Administration, Cybersecurity"));
+        courses.Add(new Course("BS in Nursing", 2300, "Anatomy, Pharmacology, Patient Care"));
+        courses.Add(new Course("BS in Mathematics", 1900, "Calculus, Linear Algebra, Number Theory"));
+    }
+
+    public override void DisplayMenu()
+    {
+        Console.WriteLine("\t|¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯|");
+        Console.WriteLine("\t|Student Enrollment Program|");
+        Console.WriteLine("\t|__________________________|");
+        Console.WriteLine("\n \t1. Create Account");
+        Console.WriteLine("\n \t2. Log In");
+        Console.WriteLine("\n \t3. Exit");
+        Console.Write("\n \tEnter an option(1-3): ");
+    }
+
+    public override void Start()
+    {
+        bool isRunning = true;
+        while (isRunning)
+        {
+            DisplayMenu();
+            int choice = int.Parse(Console.ReadLine());
+
+            switch (choice)
+            {
+                case 1:
+                    CreateAccount();
+                    break;
+                case 2:
+                    LogIn();
+                    break;
+                case 3:
+                    isRunning = false;
+                    Console.WriteLine("Exiting program.");
+                    break;
+                default:
+                    Console.WriteLine("Invalid choice. Please try again.");
+                    break;
+            }
+        }
+    }
+
+    private void CreateAccount()
+    {
+        Console.Write("\tEnter your name: ");
+        string name = Console.ReadLine();
+        string studentID = GenerateRandomStudentID();
+
+        Console.WriteLine("\tAvailable Courses:");
+        for (int i = 0; i < courses.Count; i++)
+        {
+            Console.WriteLine(i + 1 + ". " + courses[i].Name + " - Cost per semester: $" + courses[i].CostPerSemester);
+        }
+
+        Console.Write("\tSelect a course (Enter the course number): ");
+        int courseChoice = int.Parse(Console.ReadLine()) - 1;
+
+        if (courseChoice >= 0 && courseChoice < courses.Count)
+        {
+            Student student = new Student(name, studentID, courses[courseChoice]);
+            students.Add(student);
+            Console.WriteLine("\tAccount created successfully!");
+            Console.WriteLine("\tYour Student ID is: " + studentID);
+        }
+        else
+        {
+            Console.WriteLine("\tInvalid course choice. Please create an account again.");
+        }
+    }
+
+    private string GenerateRandomStudentID()
+    {
+        Random rand = new Random();
+        int randomNumber = rand.Next(1000, 9999);
+        return "S" + randomNumber.ToString();
+    }
+
+    private void LogIn()
+    {
+        Console.Write("\tEnter your student ID: ");
+        string studentID = Console.ReadLine();
+        Student student = students.Find(s => s.StudentID == studentID);
+        if (student != null)
+        {
+            Console.WriteLine("\tWelcome, " + student.Name + "!");
+            Console.WriteLine("\tCourse: " + student.Course.Name);
+            Console.WriteLine("\tCost per semester: $" + student.Course.CostPerSemester);
+            Console.WriteLine("\tSubjects: " + student.Course.Subjects);
+        }
+        else
+        {
+            Console.WriteLine("\tStudent not found. Please create an account or try again.");
+        }
+    }
+}
+
+abstract class User
+{
+    public string Name { get; set; }
+    public abstract string GetRole();
+}
+
+class Student : User
+{
+    public string StudentID { get; set; }
+    public Course Course { get; set; }
+
+    public Student(string name, string studentID, Course course)
+    {
+        Name = name;
+        StudentID = studentID;
+        Course = course;
+    }
+
+    public override string GetRole()
+    {
+        return "Student";
+    }
+}
+
+class Course
+{
+    public string Name { get; set; }
+    public decimal CostPerSemester { get; set; }
+    public string Subjects { get; set; }
+
+    public Course(string name, decimal costPerSemester, string subjects)
+    {
+        Name = name;
+        CostPerSemester = costPerSemester;
+        Subjects = subjects;
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        EnrollmentProgram enrollmentProgram = new StudentEnrollment();
+        enrollmentProgram.Start();
+    }
+}
