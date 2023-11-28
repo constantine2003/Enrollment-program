@@ -1,0 +1,381 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+
+abstract class EnrollmentProgram
+{
+    public abstract bool DisplayMenu();
+    public abstract void Start();
+}
+
+class StudentEnrollment : EnrollmentProgram
+{
+    private List<Student> students = new List<Student>();
+    private List<Course> courses = new List<Course>();
+    private string studentDataFile = "studentData.txt";
+
+    public StudentEnrollment()
+    {
+        InitializeCoursesAndSubjects();
+        LoadStudentData();
+    }
+
+    private bool InitializeCoursesAndSubjects()
+    {
+        try
+        {
+            courses.Add(new Course("BS in Computer Science", 50000, new Dictionary<int, List<string>>
+            {
+                { 1, new List<string> { "Programming Fundamentals", "Mathematics I" } },
+                { 2, new List<string> { "Data Structures", "Algorithms" } },
+                { 3, new List<string> { "Databases", "Software Engineering" } },
+                { 4, new List<string> { "Web Development", "Artificial Intelligence" } },
+                { 5, new List<string> { "Computer Networks", "Operating Systems", "Cybersecurity" } }
+            }));
+
+            // Add other courses...
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error initializing courses and subjects: " + ex.Message);
+            return false;
+        }
+    }
+
+    public override bool DisplayMenu()
+    {
+        try
+        {
+            Console.WriteLine("\n|¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯|");
+            Console.WriteLine("|WELCOME TO OUR SCHOOL PORTAL!|");
+            Console.WriteLine("|_____________________________|");
+            Console.WriteLine("\n 1. Create Account");
+            Console.WriteLine("\n 2. Log In");
+            Console.WriteLine("\n 3. Exit");
+            Console.Write("\nEnter an option (1-3): ");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error displaying menu: " + ex.Message);
+            return false;
+        }
+    }
+
+    public override void Start()
+    {
+        bool isRunning = true;
+        while (isRunning)
+        {
+            try
+            {
+                if (!DisplayMenu())
+                {
+                    Console.WriteLine("DisplayMenu failed. Exiting program.");
+                    return;
+                }
+
+                int choice;
+                if (!int.TryParse(Console.ReadLine(), out choice))
+                {
+                    Console.WriteLine("Invalid choice. Please try again.");
+                    continue;
+                }
+
+                switch (choice)
+                {
+                    case 1:
+                        if (CreateAccount())
+                        {
+                            Console.WriteLine("Account created successfully!\n");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Account creation failed. Please try again.\n");
+                        }
+                        break;
+                    case 2:
+                        if (LogIn())
+                        {
+                            Console.WriteLine("Login successful!\n");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Login failed. Please try again.\n");
+                        }
+                        break;
+                    case 3:
+                        isRunning = false;
+                        Console.WriteLine("Exiting program.");
+                        break;
+                    default:
+                        Console.WriteLine("Invalid choice. Please try again.");
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred: " + ex.Message);
+            }
+        }
+    }
+
+    private bool CreateAccount()
+    {
+        try
+        {
+            Console.Write("Enter your name: ");
+            string name = Console.ReadLine();
+            string studentID = GenerateRandomStudentID();
+
+            Console.Write("Enter a password: ");
+            string password = Console.ReadLine();
+
+            Console.WriteLine("\nAvailable Courses:");
+            for (int i = 0; i < courses.Count; i++)
+            {
+                Console.WriteLine($"{i + 1}. {courses[i].Name} - Cost per semester: PHP{courses[i].CostPerSemester}");
+            }
+
+            Console.Write("Select a course (Enter the course number): ");
+            int courseChoice = int.Parse(Console.ReadLine()) - 1;
+
+            if (courseChoice >= 0 && courseChoice < courses.Count)
+            {
+                Student student = new Student(name, studentID, password, courses[courseChoice]);
+                students.Add(student);
+                Console.Clear();
+                Console.WriteLine("Your Student ID is: " + studentID);
+                SaveStudentData(); // Save student data to file after account creation
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("Invalid course choice. Please create an account again.");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error creating account: " + ex.Message);
+            return false;
+        }
+    }
+
+    private bool LogIn()
+    {
+        try
+        {
+            Console.Write("Enter your student ID: ");
+            string studentID = Console.ReadLine();
+            Student student = students.Find(s => s.StudentID == studentID);
+            if (student != null)
+            {
+                Console.Write("Enter your password: ");
+                string password = Console.ReadLine();
+
+                if (password == student.Password)
+                {
+                    Console.WriteLine(new string('\n', 50));
+                    Console.WriteLine($"Welcome, {student.Name}!");
+
+                    bool loggedInMenu = true;
+                    while (loggedInMenu)
+                    {
+                        Console.WriteLine("\nLogged In Menu:");
+                        Console.WriteLine("1. Check Subjects");
+                        Console.WriteLine("2. Change Password");
+                        Console.WriteLine("3. Logout");
+                        Console.Write("Enter an option (1-3): ");
+                        int loggedInChoice;
+                        if (int.TryParse(Console.ReadLine(), out loggedInChoice))
+                        {
+                            switch (loggedInChoice)
+                            {
+                                case 1:
+                                    Console.WriteLine("Checking Subjects:");
+                                    Console.WriteLine($"Subjects for {student.Course.Name}:");
+                                    foreach (var entry in student.Course.Subjects)
+                                    {
+                                        Console.WriteLine($"Year {entry.Key}: {string.Join(", ", entry.Value)}");
+                                    }
+                                    break;
+                                case 2:
+                                    Console.Write("Enter your old password: ");
+                                    string oldPassword = Console.ReadLine();
+                                    Console.Write("Enter your new password: ");
+                                    string newPassword = Console.ReadLine();
+                                    student.ChangePassword(oldPassword, newPassword);
+                                    SaveStudentData(); // Save student data after changing password
+                                    break;
+                                case 3:
+                                    loggedInMenu = false;
+                                    Console.WriteLine("Logging out.");
+                                    Console.WriteLine(new string('\n', 50));
+                                    break;
+                                default:
+                                    Console.WriteLine("Invalid choice. Please try again.");
+                                    Console.Clear();
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid choice. Please try again.");
+                        }
+                    }
+
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine("Incorrect password. Please try again.");
+                    return false;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Student not found. Please create an account or try again.");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error logging in: " + ex.Message);
+            return false;
+        }
+    }
+
+    private string GenerateRandomStudentID()
+    {
+        try
+        {
+            Random rand = new Random();
+            int randomNumber = rand.Next(1000, 9999);
+            return "22-" + randomNumber.ToString();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error generating student ID: " + ex.Message);
+            return null;
+        }
+    }
+
+    private void SaveStudentData()
+    {
+        try
+        {
+            using (StreamWriter writer = new StreamWriter(studentDataFile))
+            {
+                foreach (Student student in students)
+                {
+                    writer.WriteLine($"{student.Name},{student.StudentID},{student.Password},{student.Course.Name}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error saving student data: " + ex.Message);
+        }
+    }
+
+    private void LoadStudentData()
+    {
+        try
+        {
+            if (File.Exists(studentDataFile))
+            {
+                using (StreamReader reader = new StreamReader(studentDataFile))
+                {
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        string[] data = line.Split(',');
+                        if (data.Length == 4)
+                        {
+                            string name = data[0];
+                            string studentID = data[1];
+                            string password = data[2];
+                            string courseName = data[3];
+
+                            Course course = courses.Find(c => c.Name == courseName);
+                            if (course != null)
+                            {
+                                Student student = new Student(name, studentID, password, course);
+                                students.Add(student);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading student data: " + ex.Message);
+        }
+    }
+}
+
+abstract class User
+{
+    public string Name { get; set; }
+    public abstract string GetRole();
+}
+
+class Student : User
+{
+    public string StudentID { get; set; }
+    public string Password { get; set; }
+    public Course Course { get; set; }
+
+    public Student(string name, string studentID, string password, Course course)
+    {
+        Name = name;
+        StudentID = studentID;
+        Password = password;
+        Course = course;
+    }
+
+    public override string GetRole()
+    {
+        return "Student";
+    }
+
+    public void ChangePassword(string oldPassword, string newPassword)
+    {
+        if (Password == oldPassword)
+        {
+            Password = newPassword;
+            Console.WriteLine("Password changed successfully!");
+        }
+        else
+        {
+            Console.WriteLine("Incorrect old password. Password not changed.");
+        }
+    }
+}
+
+class Course
+{
+    public string Name { get; set; }
+    public decimal CostPerSemester { get; set; }
+    public Dictionary<int, List<string>> Subjects { get; set; }
+
+    public Course(string name, decimal costPerSemester, Dictionary<int, List<string>> subjects)
+    {
+        Name = name;
+        CostPerSemester = costPerSemester;
+        Subjects = subjects;
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        EnrollmentProgram enrollmentProgram = new StudentEnrollment();
+        enrollmentProgram.Start();
+    }
+}
