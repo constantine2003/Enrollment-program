@@ -1,0 +1,719 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Sockets;
+using System.Text.Json;
+using System.Xml.Linq;
+
+public interface IEnrollmentActions
+{
+    bool CreateAccount();
+    bool LogIn();
+}
+
+abstract class EnrollmentProgram
+{
+    public abstract bool DisplayMenu();
+    public abstract void Start();
+}
+
+class StudentEnrollment : EnrollmentProgram, IEnrollmentActions
+{
+    private List<Student> students = new List<Student>();
+    private List<Course> courses = new List<Course>();
+    private string studentDataFile = "studentData.txt";
+
+    public StudentEnrollment()
+    {
+        InitializeCoursesAndSubjects();
+        LoadStudentData();
+    }
+
+    private bool InitializeCoursesAndSubjects()
+    {
+        try
+        {
+            courses.Add(new Course("BS in Computer Science", 50000, new Dictionary<int, List<string>>
+        {
+            { 1, new List<string> { "Programming Fundamentals", "Mathematics I" } },
+            { 2, new List<string> { "Data Structures", "Algorithms" } },
+            { 3, new List<string> { "Databases", "Software Engineering" } },
+            { 4, new List<string> { "Web Development", "Artificial Intelligence" } },
+            { 5, new List<string> { "Computer Networks", "Operating Systems", "Cybersecurity" } }
+        }));
+
+            courses.Add(new Course("BS in Biology", 40000, new Dictionary<int, List<string>>
+        {
+            { 1, new List<string> { "General Biology", "Genetics" } },
+            { 2, new List<string> { "Ecology", "Physiology" } },
+            { 3, new List<string> { "Microbiology", "Botany" } },
+            { 4, new List<string> { "Zoology", "Evolution" } },
+            { 5, new List<string> { "Cell Biology", "Environmental Science" } }
+        }));
+
+            courses.Add(new Course("BS in Business Administration", 32040, new Dictionary<int, List<string>>
+        {
+            { 1, new List<string> { "Introduction to Business", "Marketing Fundamentals" } },
+            { 2, new List<string> { "Financial Accounting", "Business Ethics" } },
+            { 3, new List<string> { "Management Principles", "Human Resources Management" } },
+            { 4, new List<string> { "International Business", "Entrepreneurship" } },
+            { 5, new List<string> { "Operations Management", "Strategic Planning" } }
+        }));
+
+            courses.Add(new Course("BS in Civil Engineering", 50000, new Dictionary<int, List<string>>
+        {
+            { 1, new List<string> { "Engineering Mechanics", "Mathematics for Engineers" } },
+            { 2, new List<string> { "Structural Mechanics", "Geotechnical Engineering" } },
+            { 3, new List<string> { "Transportation Engineering", "Environmental Engineering" } },
+            { 4, new List<string> { "Surveying", "Fluid Mechanics" } },
+            { 5, new List<string> { "Materials Science", "Construction Management" } }
+        }));
+
+            courses.Add(new Course("BS in Computer Engineering", 38000, new Dictionary<int, List<string>>
+        {
+            { 1, new List<string>
+                {
+                    "First Semester:\n",
+                    "Chemistry for Engineers (Lab)\n",
+                    "Chemistry for Engineers (Lec)\n",
+                    "Computer Engineering as a Discipline\n",
+                    "Engineering Calculus 1\n",
+                    "Mathematics in the Modern World\n",
+                    "Movement Enhancement / PATHFit 1-Movement Competency Training\n",
+                    "National Service Training Program\n",
+                    "Programming Logic and Design 1\n",
+                    "Science, Technology and Society\n\n",
+                    "Second Semester:\n",
+                    "Understanding the Self\n",
+                    "Discrete Mathematics\n",
+                    "Engineering Calculus 2\n",
+                    "Fitness Exercises / PATHFit 2\n",
+                    "National Service Training Program 2\n",
+                    "Physics for Engineers, lab\n",
+                    "Physics for Engineers, lec\n",
+                    "Programming Logic and Design 2\n",
+                    "Purposive Communication 3\n",
+                    "The Contemporary World\n"
+                }
+            },
+            { 2, new List<string>
+                {
+                    "First Semester:\n",
+                    "Art Appreciation\n",
+                    "Differential Equations\n",
+                    "Engineering Data Analysis\n",
+                    "Ethics\n",
+                    "Fundamentals of Electrical Circuits, lab\n",
+                    "Fundamentals of Electrical Circuits, lec\n",
+                    "General Education Elective 1\n",
+                    "Object Oriented Programming 1 for CPE\n",
+                    "PATHFIT 1/PATHFit 3-Menu of Sports, Dance, Recreation and Martial Arts, Group Exercise, Outdoor and Adventure Activities\n\n",
+                    "Second Semester:\n",
+                    "Advanced Engineering Mathematics for CPE\n",
+                    "Computer Aided Design and Drafting\n",
+                    "Data Structures and Algorithm for CPE\n",
+                    "Fundamentals of Electronic Circuits, lec\n",
+                    "Fundamentals of Electronic Circuits/Basic Electronics, lab\n",
+                    "General Education Elective 2\n",
+                    "Numerical Methods\n",
+                    "Object Oriented Programming 2 for CPE\n",
+                    "PATHFIT 2 / PATHFit 4-Menu of Sports, Dance, Recreation and Martial Arts, Group Exercise, Outdoor and Adventure Activities\n"
+                }
+            },
+            { 3, new List<string>
+                {
+                    "First Semester:\n",
+                    "Basic Occupational Safety and Health\n",
+                    "Computer Engineering Drafting and Design\n",
+                    "Data and Digital Communications\n",
+                    "Feedback and Control Systems\n",
+                    "Logic Circuits and Design\n",
+                    "Software Design\n",
+                    "Technopreneurship\n",
+                    "Track Course 1\n\n",
+                    "Second Semester:\n",
+                    "Computer Networks and Security\n",
+                    "CPE Laws and Professional Practice\n",
+                    "Fundamentals of Mixed Signals and Sensors\n",
+                    "General Education Elective 3\n",
+                    "Introduction to HDL\n",
+                    "Methods of Research\n",
+                    "Microprocessors\n",
+                    "Track Course 2\n"
+                }
+            },
+            { 4, new List<string>
+                {
+                    "First Semester:\n",
+                    "Computer Architecture and Organization\n",
+                    "CPE Comprehensive Evaluation Course 1\n",
+                    "CPE Practice and Design 1\n",
+                    "Digital Signal Processing\n",
+                    "Embedded Systems\n",
+                    "Engineering Economics\n",
+                    "Track Course 3\n\n",
+                    "Second Semester:\n",
+                    "CPE Practice and Design 2\n",
+                    "Emerging Technologies in CPE\n",
+                    "Engineering Management\n",
+                    "Readings in Philippine History\n",
+                    "Seminars and Field Trips\n",
+                    "The Life and Works of Rizal"
+                }
+            },
+        }));
+
+            courses.Add(new Course("BS in Information Technology (IT)", 37100, new Dictionary<int, List<string>>
+        {
+            { 1, new List<string> { "Introduction to IT", "Computer Networking" } },
+            { 2, new List<string> { "Database Management", "Systems Analysis" } },
+            { 3, new List<string> { "Web Development", "Mobile App Development" } },
+            { 4, new List<string> { "Cloud Computing", "IT Project Management" } },
+            { 5, new List<string> { "IT Ethics", "Data Analytics" } }
+        }));
+
+            courses.Add(new Course("BS in Nursing", 62300, new Dictionary<int, List<string>>
+        {
+            { 1, new List<string> { "Anatomy", "Pharmacology" } },
+            { 2, new List<string> { "Patient Care", "Nursing Ethics" } },
+            { 3, new List<string> { "Medical-Surgical Nursing", "Pediatrics" } },
+            { 4, new List<string> { "Obstetrics", "Mental Health Nursing" } },
+            { 5, new List<string> { "Community Health Nursing", "Nursing Research" } }
+        }));
+
+            courses.Add(new Course("BS in Mathematics", 21900, new Dictionary<int, List<string>>
+        {
+            { 1, new List<string> { "Calculus I", "Linear Algebra" } },
+            { 2, new List<string> { "Calculus II", "Number Theory" } },
+            { 3, new List<string> { "Differential Equations", "Abstract Algebra" } },
+            { 4, new List<string> { "Real Analysis", "Complex Analysis" } },
+            { 5, new List<string> { "Statistics", "Discrete Mathematics" } }
+        }));
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error initializing courses and subjects: " + ex.Message);
+            return false;
+        }
+    }
+
+    public override bool DisplayMenu()
+    {
+        try
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("╔════════════════════════════════╗");
+            Console.WriteLine("║                                ║");
+            Console.WriteLine("║  WELCOME TO OUR SCHOOL PORTAL! ║");
+            Console.WriteLine("║                                ║");
+            Console.WriteLine("╠════════════════════════════════╣");
+            Console.WriteLine("║                                ║");
+            Console.WriteLine("║  [1] Create Account            ║");
+            Console.WriteLine("║                                ║");
+            Console.WriteLine("║  [2] Log In                    ║");
+            Console.WriteLine("║                                ║");
+            Console.WriteLine("║  [3] Exit                      ║");
+            Console.WriteLine("║                                ║");
+            Console.WriteLine("╚════════════════════════════════╝");
+            Console.Write("\nEnter an option (1-3): ");
+            Console.ResetColor();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error displaying menu: " + ex.Message);
+            return false;
+        }
+    }
+
+    public override void Start()
+    {
+        bool isRunning = true;
+        while (isRunning)
+        {
+            try
+            {
+                if (!DisplayMenu())
+                {
+                    Console.WriteLine("DisplayMenu failed. Exiting program.");
+                    return;
+                }
+
+                int choice;
+                if (!int.TryParse(Console.ReadLine(), out choice))
+                {
+                    Console.WriteLine("Invalid choice. Please try again.");
+                    continue;
+                }
+
+                switch (choice)
+                {
+                    case 1:
+                        if (CreateAccount())
+                        {
+                            Console.WriteLine("Account created successfully!\n");
+                            SaveStudentData();
+                        }
+                        else
+                        {
+                            Console.WriteLine("Account creation failed. Please try again.\n");
+                        }
+                        break;
+                    case 2:
+                        if (LogIn())
+                        {
+                            Console.WriteLine("Login successful!\n");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Login failed. Please try again.\n");
+                        }
+                        break;
+                    case 3:
+                        isRunning = false;
+                        Console.WriteLine("Exiting program.");
+                        SaveStudentData();
+                        break;
+                    default:
+                        Console.WriteLine("Invalid choice. Please try again.");
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred: " + ex.Message);
+            }
+        }
+    }
+
+    public bool CreateAccount()
+    {
+        try
+        {
+            Console.Clear();
+            Console.Write("Enter your name: ");
+            string name = Console.ReadLine();
+            string studentID = GenerateRandomStudentID();
+
+            Console.Write("Enter your birthday (MM/DD/YYYY): ");
+            DateTime birthday;
+            if (!DateTime.TryParse(Console.ReadLine(), out birthday))
+            {
+                Console.WriteLine("Invalid birthday format. Please enter your birthday in MM/DD/YYYY format.");
+                return false;
+            }
+
+            Console.Write("Enter your current address: ");
+            string address = Console.ReadLine();
+
+            Console.Write("Enter your citizenship: ");
+            string citizenship = Console.ReadLine();
+
+            Console.Write("Enter your gender: ");
+            string gender = Console.ReadLine();
+
+            Console.Write("Enter a password: ");
+            string password = Console.ReadLine();
+
+            Console.WriteLine("\nAvailable Courses:");
+            for (int i = 0; i < courses.Count; i++)
+            {
+                Console.WriteLine($"{i + 1}. {courses[i].Name} - Cost per semester: PHP{courses[i].CostPerSemester}");
+            }
+
+            Console.Write("Select a course (Enter the course number): ");
+            int courseChoice = int.Parse(Console.ReadLine()) - 1;
+
+            if (courseChoice >= 0 && courseChoice < courses.Count)
+            {
+                Student student = new Student(name, studentID, password, birthday, courses[courseChoice], address, citizenship, gender);
+                students.Add(student);
+                Console.Clear();
+                Console.WriteLine("Your Student ID is: " + studentID);
+                SaveStudentData();
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("Invalid course choice. Please create an account again.");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error creating account: " + ex.Message);
+            return false;
+        }
+    }
+
+    public bool LogIn()
+    {
+        try
+        {
+            Console.Write("Enter your student ID: ");
+            string studentID = Console.ReadLine();
+            Student student = students.Find(s => s.StudentID == studentID);
+            if (student != null)
+            {
+                Console.Write("Enter your password: ");
+                string password = Console.ReadLine();
+
+                if (password == student.Password)
+                {
+                    Console.Clear();
+                    Console.WriteLine($"Welcome, {student.Name}!!!!");
+
+                    bool loggedInMenu = true;
+                    while (loggedInMenu)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Blue;
+                        Console.WriteLine("╔════════════════════════════╗");
+                        Console.WriteLine("║   Logged In Menu:          ║");
+                        Console.WriteLine("║--------------------------  ║");
+                        Console.WriteLine("║ [1] Check Curriculum       ║");
+                        Console.WriteLine("║ [2] Change Password        ║");
+                        Console.WriteLine("║ [3] Choose Payment         ║");
+                        Console.WriteLine("║     Method                 ║");
+                        Console.WriteLine("║ [4] Profile                ║");
+                        Console.WriteLine("║ [5] Add Subject            ║");
+                        Console.WriteLine("║ [6] Logout                 ║");
+                        Console.WriteLine("╚════════════════════════════╝");
+
+                        Console.Write("Enter an option (1-5): ");
+                        Console.ResetColor();
+
+                        int loggedInChoice;
+                        if (int.TryParse(Console.ReadLine(), out loggedInChoice))
+                        {
+                            switch (loggedInChoice)
+                            {
+                                case 1:
+                                    Console.Clear();
+                                    Console.WriteLine("Checking Subjects:");
+                                    Console.WriteLine($"Subjects for {student.Course.Name}:");
+                                    foreach (var entry in student.Course.Subjects)
+                                    {
+                                        Console.WriteLine($"Year {entry.Key}: {string.Join(", ", entry.Value)}");
+                                    }
+                                    break;
+                                case 2:
+                                    Console.Write("Enter your old password: ");
+                                    string oldPassword = Console.ReadLine();
+                                    Console.Write("Enter your new password: ");
+                                    string newPassword = Console.ReadLine();
+                                    student.ChangePassword(oldPassword, newPassword);
+                                    SaveStudentData();
+                                    break;
+                                case 3:
+                                    ChoosePaymentMethod(student);
+                                    break;
+                                case 4:
+                                    ViewProfile(student);
+                                    break;
+                                case 5:
+                                    EnrollSubjects(student);
+                                    break;
+                                case 6:
+                                    loggedInMenu = false;
+                                    Console.WriteLine("Logging out.");
+                                    Console.Clear();
+                                    break;
+                                default:
+                                    Console.WriteLine("Invalid choice. Please try again.");
+                                    Console.Clear();
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid choice. Please try again.");
+                        }
+                    }
+
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine("Incorrect password. Please try again.");
+                    return false;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Student not found. Please create an account or try again.");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error logging in: " + ex.Message);
+            return false;
+        }
+    }
+
+    private void ChoosePaymentMethod(Student student)
+    {
+        try
+        {
+            Console.Clear();
+            Console.WriteLine("\n╔════════════════════════════════════════╗");
+            Console.WriteLine("║        Choose Payment Method:          ║");
+            Console.WriteLine("║  1. Online Payment                     ║");
+            Console.WriteLine("║  2. Pay Through the Cashier            ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.Write("Enter your choice (1-2): ");
+            int paymentChoice;
+            if (int.TryParse(Console.ReadLine(), out paymentChoice))
+            {
+                switch (paymentChoice)
+                {
+                    case 1:
+                        Console.WriteLine($"Online Payment selected. Receipt:\n{GenerateOnlinePaymentReceipt(student)}");
+                        break;
+                    case 2:
+                        Console.WriteLine($"Pay Through the Cashier selected. Receipt:\n{GenerateCashierPaymentReceipt(student)}");
+                        break;
+                    default:
+                        Console.WriteLine("Invalid choice. Please try again.");
+                        break;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Invalid choice. Please try again.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error choosing payment method: " + ex.Message);
+        }
+    }
+
+    public void EnrollSubjects(Student student)
+    {
+        var user = userDatabase.Find(u => u.Student == student);
+
+        if (user != null) 
+        {
+            List<Subject> availableSubjects = GetAvailableSubjects();
+            bool death = false;
+            while (!death)
+            {
+                Console.WriteLine($"Registered Subjects({user.UnitsTaken} taken): "};
+            foreach (var subject in user.EnrolledSubjects)
+            {
+                Console.WriteLine($"{subject.Name} ({subject.Units} units)");
+            }
+            Console.WriteLine();
+            Console.WriteLine("\nAvailable Subjects:");
+            for (int i = 0; i < availableSubjects.Count; i++)
+            {
+                Console.WriteLine($"{i + 1}, {availableSubjects[i].Name} ({availableSubjects[i].Units} units)");
+            }
+            Console.Write("Select a subject (1-" + availableSubjects.Count + ") or type 'done if finish; ");
+            string input = Console.ReadLine().Trim();
+
+            if (input.Equals("done", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.Clear();
+                death = true;
+                break;
+            }
+
+            if (int.TryParse(input, out int selectedIndex) && selectedIndex >= 1 && selectedIndex <= availableSubjects.Count)
+            {
+                user.EnrolledSubjects.Add(selectedSubject);
+                user.TempoUnits -= selectedSubject.Units;
+                user.unitsTaken += selectedSubject.Units;
+                availableSubjects.RemoveAt(selectedIndex - 1);
+                Console.WriteLine($"{selectedSubject.Name} enrolled sucessfully. press Enter to Continue.");
+                Console.ReadKey();
+                Console.Clear();
+            }
+            else
+            {
+                Console.WriteLine("Insufficient units to enroll in this subject. press Enter to Continue.");
+                Console.ReadKey();
+                Console.Clear();
+            }
+        }
+        else
+        {
+            Console.WriteLine("Invalid input. Please select a subject by entering a valid number or type 'done' to finish.");
+            Console.ReadKey();
+            Console.Clear();
+        }
+    }
+}
+
+    public class Subject
+    {
+        public string Name { get; set; }
+        public int Units { get; set; }
+
+        public Subject(string name, int units)
+        {
+            Name = name;
+            Units = units;
+        }
+    }
+    private List<Subject> GetAvailableSubjects()
+    {
+        List<Subject> subjects = new List<Subject>
+        {
+            new Subject("Chemistry for Engineers (Lab)", 1),
+            new Subject("Chemistry for Engineers (Lec)", 3),
+            new Subject("Computer Engineering as a Discipline", 1),
+            new Subject("Engineering Calculus 1", 3),
+            new Subject("Movement Enhancement / PATHFit 1-Movement Competency Training", 2),
+            new Subject("National Service Training Program 1", 3),
+            new Subject("Programming Logic and Design 1", 3),
+            new Subject("Science, Technology and Society", 3),
+            new Subject("Understanding the Self", 3),
+            new Subject("Purposive Communication", 3),
+            new Subject("The Contemporary World", 3),
+            new Subject("Ethics", 3),
+            new Subject("Art Appreciation", 3),
+        };
+        return subjects;
+     }
+    private string GenerateOnlinePaymentReceipt(Student student)
+    {
+        return $"Receipt for Online Payment\nStudent: {student.Name}\nCourse: {student.Course.Name}\nAmount: PHP {student.Course.CostPerSemester}\nDate: {DateTime.Now}";
+    }
+
+    private string GenerateCashierPaymentReceipt(Student student)
+    {
+        return $"Receipt for Payment Through Cashier\nStudent: {student.Name}\nCourse: {student.Course.Name}\nAmount: PHP {student.Course.CostPerSemester}\nDate: {DateTime.Now}";
+    }
+
+    private string GenerateRandomStudentID()
+    {
+        try
+        {
+            Random rand = new Random();
+            int randomNumber = rand.Next(1000, 9999);
+            return $"22-{randomNumber:0000}-10";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error generating student ID: " + ex.Message);
+            return null;
+        }
+    }
+
+    private void SaveStudentData()
+    {
+        try
+        {
+            string jsonData = JsonSerializer.Serialize(students);
+            File.WriteAllText(studentDataFile, jsonData);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error saving student data: " + ex.Message);
+        }
+    }
+
+    private void LoadStudentData()
+    {
+        try
+        {
+            if (File.Exists(studentDataFile))
+            {
+                string jsonData = File.ReadAllText(studentDataFile);
+                students = JsonSerializer.Deserialize<List<Student>>(jsonData);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading student data: " + ex.Message);
+        }
+    }
+    private void ViewProfile(Student student)
+    {
+        Console.Clear();
+        Console.WriteLine("\nStudent Profile:");
+        Console.WriteLine($"Name: {student.Name}");
+        Console.WriteLine($"Student ID: {student.StudentID}");
+        Console.WriteLine($"Birthday: {student.Birthday}");
+        Console.WriteLine($"Address: {student.Address}");
+        Console.WriteLine($"Citizenship: {student.Citizenship}");
+        Console.WriteLine($"Gender: {student.Gender}");
+    }
+}
+
+abstract class User
+{
+    public string Name { get; set; }
+    public abstract string GetRole();
+}
+
+class Student : User
+{
+    public string StudentID { get; set; }
+    public string Password { get; set; }
+    public DateTime Birthday { get; set; }
+    public Course Course { get; set; }
+
+    public string Address { get; set; }
+    public string Citizenship { get; set; }
+    public string Gender { get; set; }
+
+    public Student(string name, string studentID, string password, DateTime birthday, Course course, string address, string citizenship, string gender)
+    {
+        Name = name;
+        StudentID = studentID;
+        Password = password;
+        Birthday = birthday;
+        Course = course;
+        Address = address;
+        Citizenship = citizenship;
+        Gender = gender;
+    }
+
+    public override string GetRole()
+    {
+        return "Student";
+    }
+
+    public void ChangePassword(string oldPassword, string newPassword)
+    {
+        if (Password == oldPassword)
+        {
+            Password = newPassword;
+            Console.Clear();
+            Console.WriteLine("Password changed successfully!");
+        }
+        else
+        {
+            Console.WriteLine("Incorrect old password. Password not changed.");
+        }
+    }
+}
+
+class Course
+{
+    public string Name { get; set; }
+    public decimal CostPerSemester { get; set; }
+    public Dictionary<int, List<string>> Subjects { get; set; }
+
+    public Course(string name, decimal costPerSemester, Dictionary<int, List<string>> subjects)
+    {
+        Name = name;
+        CostPerSemester = costPerSemester;
+        Subjects = subjects;
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        EnrollmentProgram enrollmentProgram = new StudentEnrollment();
+        enrollmentProgram.Start();
+    }
+}
