@@ -1,0 +1,1303 @@
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System;
+using System.Text.Json;
+using System.ComponentModel.DataAnnotations;
+using System.Data;
+using System.IO;
+using System.Text.Json;
+using System.Xml.Linq;
+
+public interface UCredentials
+{
+
+}
+
+public interface YearLevel
+{
+    string DisplayLevel();
+}
+
+public class Subject
+{
+    public string Name { get; set; }
+    public int Units { get; set; }
+    public Subject(string name, int units)
+    {
+        Name = name;
+        Units = units;
+    }
+}
+public abstract class AUserInfo : InformationofUser, YearLevel
+{
+    public abstract string DisplayLevel();
+    public string username;
+    public string password;
+    public string lastname;
+    public string firstname;
+    public string role;
+    public int yearLevel;
+    public int units;
+    public int unitsTaken;
+    public List<Subject> enrolledSubjects;
+}
+
+public class InformationofUser
+{
+
+    public string username;
+    public string password;
+    public string lastname;
+    public string firstname;
+    public string role;
+    public int yearLevel;
+    public int units;
+    public int unitsTaken;
+    public int number;
+    public string idNumber;
+
+    private List<Subject> enrolledSubjects = new List<Subject>();
+    public void ChangePassword(string newPassword)
+    {
+        Password = newPassword;
+    }
+    public string Username
+    {
+        get { return username; }
+        set { username = value; }
+    }
+    public string Password
+    {
+        get { return password; }
+        set { password = value; }
+    }
+    public string Role
+    {
+        get { return role; }
+        set { role = value; }
+    }
+    public int YearLevel
+    {
+        get { return yearLevel; }
+        set { yearLevel = value; }
+    }
+    public int Units
+    {
+        get { return units; }
+        set { units = value; }
+    }
+    public int UnitsTaken
+    {
+        get { return unitsTaken; }
+        set { unitsTaken = value; }
+    }
+    public int Number
+    {
+        get { return number; }
+        set { number = value; }
+    }
+    public string IDNumber
+    {
+        get { return idNumber; }
+        set { idNumber = value; }
+    }
+    public List<Subject> EnrolledSubjects
+    {
+        get { return enrolledSubjects; }
+        set { enrolledSubjects = value; }
+    }
+    public int TempoUnits { get; set; }
+}
+
+class FirstYearCollege : AUserInfo
+{
+    public override string DisplayLevel()
+    {
+        return "1st Year";
+    }
+}
+
+class SecondYearCollege : AUserInfo
+{
+    public override string DisplayLevel()
+    {
+        return "2nd Year";
+    }
+}
+
+class ThirdYearCollege : AUserInfo
+{
+    public override string DisplayLevel()
+    {
+        return "3rd Year";
+    }
+}
+
+class FourthYearCollege : AUserInfo
+{
+    public override string DisplayLevel()
+    {
+        return "4rd Year";
+    }
+}
+
+class Credentials : UCredentials
+{
+    private List<InformationofUser> userDatabase = new List<InformationofUser>();
+    public Credentials()
+    {
+        userDatabase = LoadUserDatabase();
+    }
+    private List<InformationofUser> LoadUserDatabase()
+    {
+        if (File.Exists("userDatabase.json"))
+        {
+            var json = File.ReadAllText("userDatabase.json");
+            var users = JsonSerializer.Deserialize<List<InformationofUser>>(json);
+            foreach (var user in users)
+            {
+                // Find the corresponding user in the database by username
+                var matchingUser = userDatabase.Find(u => u.Username == user.Username);
+                if (matchingUser != null)
+                {
+                    // Copy enrolled subjects from the loaded user to the existing user
+                    matchingUser.EnrolledSubjects = user.EnrolledSubjects;
+                }
+            }
+            return users;
+        }
+        return new List<InformationofUser>();
+    }
+    private void SaveUserDatabase()
+    {
+        var json = JsonSerializer.Serialize(userDatabase);
+
+        File.WriteAllText("userDatabase.json", json);
+    }
+    public bool Signup(string username, string password)
+
+    {
+
+        if (userDatabase.Exists(user => user.Username == username))
+
+        {
+
+            Console.WriteLine("Username already exists. Choose a different one.");
+
+            return false;
+
+        }
+
+        var newUser = new InformationofUser
+
+        {
+
+            Username = username,
+
+            Password = password,
+
+        };
+
+        Console.Write("Course:");
+
+        string role = Console.ReadLine().Trim().ToUpper();
+
+        if (role == "CPE" || role == "CE" || role == "IE")
+
+        {
+
+            newUser.Role = role;
+
+        }
+
+        else
+
+        {
+
+            Console.WriteLine("Invalid role. Please enter 'CPE' or 'CE' or 'IE'.");
+
+            return false;
+
+        }
+
+        Console.Write("Year level: 1 ,2 ,3 ,4: ");
+
+        int yearlevel = int.Parse(Console.ReadLine());
+
+        if (yearlevel == 1 || yearlevel == 2 || yearlevel == 3 || yearlevel == 4)
+
+        {
+
+            {
+
+                newUser.YearLevel = yearlevel;
+
+                newUser.Units = GetUnitsByYearLevel(yearlevel);
+
+                newUser.TempoUnits = newUser.Units;
+
+            }
+
+        }
+
+        else
+
+        {
+
+            Console.WriteLine("Invalid Year level.");
+
+            return false;
+
+        }
+
+        Random rnd = new Random();
+
+        int randomNumber = rnd.Next(1000, 10000);
+
+        int randomNum2 = rnd.Next(100, 1000);
+
+        string idNumber = "22 - " + randomNumber + " - " + randomNum2;
+
+        newUser.IDNumber = idNumber;
+
+        Console.WriteLine("Your ID Number is: " + idNumber);
+
+
+        userDatabase.Add(newUser);
+
+        SaveUserDatabase();
+
+        Console.WriteLine("Signup successful.");
+
+        return true;
+
+    }
+
+    private int GetNumber(string role, int yearlevel)
+    {
+
+        int num = 0;
+        if (role == "CE" && yearlevel == 1)
+        {
+            num = 101;
+        }
+        else if (role == "CE" && yearlevel >= 2)
+        {
+            num = 1 + (100 * yearlevel);
+        }
+        else if (role == "CPE" && yearlevel == 1)
+        {
+            num = 111;
+        }
+        else if (role == "CPE" && yearlevel >= 2)
+        {
+            num = 11 + (100 * yearlevel);
+        }
+        else if (role == "IE" && yearlevel == 1)
+        {
+            num = 121;
+        }
+        else if (role == "IE" && yearlevel >= 2)
+        {
+            num = 21 + (100 * yearlevel);
+        }
+        return num;
+    }
+
+    private int GetUnitsByYearLevel(int yearLevel)
+
+    {
+
+        switch (yearLevel)
+
+        {
+
+            case 1:
+
+                return 25;
+
+            case 2:
+
+                return 25;
+
+            case 3:
+
+                return 24;
+
+            case 4:
+
+                return 23;
+
+            default:
+
+                return 0;
+
+        }
+
+    }
+
+    public bool Login(string username, string password)
+    {
+        var user = userDatabase.Find(u => u.Username == username && u.Password == password);
+        if (user != null)
+        {
+            int number = GetNumber(user.Role, user.YearLevel);
+            AUserInfo firstYear = new FirstYearCollege();
+            AUserInfo secondYear = new SecondYearCollege();
+            AUserInfo thirdYear = new ThirdYearCollege();
+            AUserInfo fourthYear = new FourthYearCollege();
+            Console.WriteLine("Login Successfully... Press Any Key To Continue.");
+            Console.ReadKey();
+            Console.Clear();
+            bool death = false;
+            while (!death)
+            {
+                Console.WriteLine($"Welcome, {username} ({user.Role}).");
+                Console.WriteLine( $"ID Number: {user.IDNumber} ");
+                
+
+                string useryearlevel = "";
+                if (user.YearLevel == 1)
+                {
+                    useryearlevel = firstYear.DisplayLevel();
+                }
+                else if (user.YearLevel == 2)
+                {
+                    useryearlevel = secondYear.DisplayLevel();
+                }
+                else if (user.YearLevel == 3)
+                {
+                    useryearlevel = thirdYear.DisplayLevel();
+                }
+                else if (user.YearLevel == 4)
+                {
+                    useryearlevel = fourthYear.DisplayLevel();
+                }
+                Console.WriteLine($"Year level: {useryearlevel}");
+                Console.WriteLine("Units allowed: " + user.Units);
+                Console.WriteLine($"Registered subjects({user.UnitsTaken} unit(s)): ");
+
+                foreach (var subject in user.EnrolledSubjects)
+                {
+                    Console.WriteLine($"{subject.Name} ({subject.Units} units)");
+                }
+                Console.WriteLine();
+                Console.Write("Enroll Subjects - 1 | Remove Subjects - 2 | Edit Password - 3 | LOGOUT - 0\nSelect:");
+                int choice = int.Parse(Console.ReadLine());
+                Console.Clear();
+                if (choice == 1)
+                {
+                    if (user.Units == user.UnitsTaken)
+                    {
+                        Console.WriteLine("Maximum units reached, please remove subject(s) to modify. Press any key to continue");
+                        Console.ReadKey();
+                        Console.Clear();
+                        continue;
+                    }
+                    else
+                    {
+                        EnrollSubjects(username, number);
+                    }
+                }
+                if (choice == 2)
+                {
+                    if (user.EnrolledSubjects.Count == 0)
+                    {
+                        Console.WriteLine("No subjects enrolled. Press Any Key To Continue");
+                        Console.ReadKey();
+                        Console.Clear();
+                    }
+                    else
+                    {
+                        RemoveSubjects(username);
+                    }
+                }
+                if (choice == 3)
+                {
+                    Console.Write("Enter Your Current Password: ");
+                    string oldPassword = Console.ReadLine();
+                    Console.Write("Enter Your New Password: ");
+                    string newPassword = Console.ReadLine();
+                    if (ChangePassword(username, oldPassword, newPassword))
+                    {
+                        Console.WriteLine("Password changed successfully. Press any key to continue.");
+                        Console.ReadKey();
+                        Console.Clear();
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid username or password. Password change failed.");
+                        Console.ReadKey();
+                        Console.Clear();
+                    }
+                }
+                if (choice == 0)
+                {
+                    death = true;
+                }
+            }
+            return true;
+        }
+        Console.WriteLine("Invalid username or password. Please try again.");
+        return false;
+    }
+
+    public bool ChangePassword(string username, string oldPassword, string newPassword)
+    {
+        var user = userDatabase.Find(u => u.Username == username && u.Password == oldPassword);
+        if (user != null)
+        {
+            user.ChangePassword(newPassword);
+            SaveUserDatabase();
+            return true;
+        }
+        return false;
+    }
+
+    public void ResetData()
+    {
+        userDatabase = new List<InformationofUser>();
+        SaveUserDatabase();
+        if (File.Exists("userDatabase.json"))
+        {
+            File.Delete("userDatabase.json");
+        }
+        Console.WriteLine("User data has been reset.");
+    }
+
+    private List<Subject> GetAvailableSubjects(int number)
+
+    {
+
+        List<Subject> subjects = new List<Subject>();
+
+        //CE 1ST YEAR
+
+        if (number == 101)
+
+        {
+
+            subjects.Add(new Subject("Chemistry for Engineers (Lab)", 1));
+
+            subjects.Add(new Subject("Chemistry for Engineers (Lec)", 3));
+
+            subjects.Add(new Subject("Civil Engineering Orientation", 2));
+
+            subjects.Add(new Subject("Engineering Calculus 1", 3));
+
+            subjects.Add(new Subject("Movement Enhancement / PATHFit 1-Movement Competency Training", 2));
+
+            subjects.Add(new Subject("National Service Training Program 1", 3));
+
+            subjects.Add(new Subject("Mathematics in The Modern World", 3));
+
+            subjects.Add(new Subject("Science, Technology and Society", 3));
+
+            subjects.Add(new Subject("Readings in Philippine History", 3));
+
+            //2ndsem
+
+            subjects.Add(new Subject("Computer Programming 1", 1));
+
+            subjects.Add(new Subject("Engineering Calculus 2", 3));
+
+            subjects.Add(new Subject("Engineering Drawing", 1));
+
+            subjects.Add(new Subject("Ethics", 3));
+
+            subjects.Add(new Subject("Fitness Exercises / PATHFit 2-Exercise-based Fitness Activities", 2));
+
+            subjects.Add(new Subject("National Service Training Program 2", 1));
+
+            subjects.Add(new Subject("Physics for Engineers (Lab)", 1));
+
+            subjects.Add(new Subject("Physics for Engineers (Lec)", 3));
+
+            subjects.Add(new Subject("The Contemporary World", 3));
+
+            subjects.Add(new Subject("Understanding the Self", 3));
+
+        }
+
+        //CE 2ND YEAR
+
+        else if (number == 201)
+
+        {
+
+            subjects.Add(new Subject("Art Appreciation", 3));
+
+            subjects.Add(new Subject("Computer Aided Design and Drafting", 1));
+
+            subjects.Add(new Subject("Computer Programming 2", 1));
+
+            subjects.Add(new Subject("Differential Equations", 3));
+
+            subjects.Add(new Subject("Engineering Data Analysis", 3));
+
+            subjects.Add(new Subject("Fundamentals of Surveying 1", 3));
+
+            subjects.Add(new Subject("PATHFIT-1 / PATHFit 3- Menu of Sports, Dance, Recreation and Martial Arts, Group Exercise, Outdoor and Adventure Activities", 2));
+
+            subjects.Add(new Subject("Purposive Communication", 3));
+
+            subjects.Add(new Subject("Statistics of Rigid Bodies", 3));
+
+            //2ndsem
+
+            subjects.Add(new Subject("Construction Materials and Testing", 3));
+
+            subjects.Add(new Subject("Dynamics of Rigid Bodies", 2));
+
+            subjects.Add(new Subject("Engineering Economics", 3));
+
+            subjects.Add(new Subject("Engineering Management", 3));
+
+            subjects.Add(new Subject("Fundamentals of Surveying 2", 3));
+
+            subjects.Add(new Subject("General Education Elective 1", 3));
+
+            subjects.Add(new Subject("Geology for Civil Engineers", 2));
+
+            subjects.Add(new Subject("Mechanics of Deformable Bodies", 5));
+
+            subjects.Add(new Subject("PATHFIT-2 / PATHFit 4- Menu of Sports, Dance, Recreation and Martial Arts, Group Exercise, Outdoor and Adventure Activities", 2));
+
+        }
+
+        //CE 3RD YEAR
+
+        else if (number == 301)
+
+        {
+
+            subjects.Add(new Subject("Construction Safety Management", 1));
+
+            subjects.Add(new Subject("Engineering Utilities 1", 3));
+
+            subjects.Add(new Subject("Engineering Utilities 2", 3));
+
+            subjects.Add(new Subject("General Education Elective 2", 3));
+
+            subjects.Add(new Subject("General Education Elective 3", 3));
+
+            subjects.Add(new Subject("Highway and Railroad Engineering", 3));
+
+            subjects.Add(new Subject("Numerical Solutions for CE Problems", 3));
+
+            subjects.Add(new Subject("Structural Theory", 5));
+
+            //2ndsem
+
+            subjects.Add(new Subject("Building System", 3));
+
+            subjects.Add(new Subject("CE Laws, Ethics and Contracts", 2));
+
+            subjects.Add(new Subject("Environmental Engineering for CE", 2));
+
+            subjects.Add(new Subject("Hydraulics", 5));
+
+            subjects.Add(new Subject("Hydrology", 2));
+
+            subjects.Add(new Subject("Principles of Reinforced/Pre-stressed Concrete", 4));
+
+            subjects.Add(new Subject("Principles of Steel Design", 3));
+
+            subjects.Add(new Subject("Technopreneurship", 3));
+
+        }
+
+        //CE 4TH YEAR
+
+        else if (number == 401)
+
+        {
+
+            subjects.Add(new Subject("CE Comprehensive Course 1", 1));
+
+            subjects.Add(new Subject("CE Comprehensive Course 2", 1));
+
+            subjects.Add(new Subject("CE Project 1", 2));
+
+            subjects.Add(new Subject("Geotechnical Engineering (Soll Mechanics)", 4));
+
+            subjects.Add(new Subject("Principles of Transportation Engineering", 3));
+
+            subjects.Add(new Subject("Professional Course-specialized 1", 4));
+
+            subjects.Add(new Subject("Professional Course-specialized 2", 4));
+
+            //2ndsem
+
+            subjects.Add(new Subject("CE Comprehensive Course 3", 1));
+
+            subjects.Add(new Subject("CE Project 2", 2));
+
+            subjects.Add(new Subject("Construction Methods and Project Management", 3));
+
+            subjects.Add(new Subject("Professional Course-specialized 3", 4));
+
+            subjects.Add(new Subject("Professional Course-specialized 4", 4));
+
+            subjects.Add(new Subject("Professional Course-specialized 5", 4));
+
+            subjects.Add(new Subject("Quantity Surveying", 2));
+
+            subjects.Add(new Subject("The Life and Works of Rizal", 3));
+
+        }
+
+        //CPE 1ST YEAR
+
+        else if (number == 111)
+
+        {
+
+            subjects.Add(new Subject("Chemistry for Engineers (Lab)", 1));
+
+            subjects.Add(new Subject("Chemistry for Engineers (Lec)", 3));
+
+            subjects.Add(new Subject("Computer Engineering as a Discipline", 1));
+
+            subjects.Add(new Subject("Engineering Calculus 1", 3));
+
+            subjects.Add(new Subject("Mathematics in The Modern World", 3));
+
+            subjects.Add(new Subject("Movement Enhancement / PATHFit 1-Movement Competency Training", 2));
+
+            subjects.Add(new Subject("National Service Training Program 1", 3));
+
+            subjects.Add(new Subject("Programming Logic and Design 1", 3));
+
+            subjects.Add(new Subject("Science, Technology and Society", 3));
+
+            subjects.Add(new Subject("Understanding the Self", 3));
+
+            //2ndsem
+
+            subjects.Add(new Subject("Discrete Mathematics", 3));
+
+            subjects.Add(new Subject("Engineering Calculus 2", 3));
+
+            subjects.Add(new Subject("Fitness Exercises / PATHFit 2-Exercise-based Fitness Activities", 2));
+
+            subjects.Add(new Subject("National Service Training Program 2", 3));
+
+            subjects.Add(new Subject("Physics for Engineers (Lab)", 1));
+
+            subjects.Add(new Subject("Physics for Engineers (Lec)", 3));
+
+            subjects.Add(new Subject("Programming Logic and Design 2", 3));
+
+            subjects.Add(new Subject("Purposive Communication", 3));
+
+            subjects.Add(new Subject("The Contemporary World", 3));
+
+        }
+
+        //CPE 2ND YEAR
+
+        else if (number == 211)
+
+        {
+
+            subjects.Add(new Subject("Art Appreciation", 3));
+
+            subjects.Add(new Subject("Differential Equations", 3));
+
+            subjects.Add(new Subject("Engineering Data Analysis", 3));
+
+            subjects.Add(new Subject("Ethics", 3));
+
+            subjects.Add(new Subject("Fundamentals of Electrical Circuits (Lab)", 1));
+
+            subjects.Add(new Subject("Fundamentals of Electrical Circuits (Lec)", 3));
+
+            subjects.Add(new Subject("General Education Elective 1", 3));
+
+            subjects.Add(new Subject("Object Oriented Programming 1 for CPE", 3));
+
+            subjects.Add(new Subject("PATHFIT-1 / PATHFit 3- Menu of Sports, Dance, Recreation and Martial Arts, Group Exercise, Outdoor and Adventure Activities", 2));
+
+            //2ndsem
+
+            subjects.Add(new Subject("Advanced Engineering Mathematics for CPE", 3));
+
+            subjects.Add(new Subject("Computer Aided Design and Drafting", 1));
+
+            subjects.Add(new Subject("Data Structures and Algorithms for CPE", 4));
+
+            subjects.Add(new Subject("Fundamentals of Electronic Circuits (Lec)", 3));
+
+            subjects.Add(new Subject("Fundamentals of Electronic Circuits/Basic Electronics, Lab", 1));
+
+            subjects.Add(new Subject("General Education Elective 2", 3));
+
+            subjects.Add(new Subject("Numerical Methods", 3));
+
+            subjects.Add(new Subject("Object Oriented Programming 2 for CPE", 3));
+
+            subjects.Add(new Subject("PATHFIT-2 / PATHFit 4- Menu of Sports, Dance, Recreation and Martial Arts, Group Exercise, Outdoor and Adventure Activities", 2));
+
+        }
+
+        //CPE 3RD YEAR
+
+        else if (number == 311)
+
+        {
+
+            subjects.Add(new Subject("Basic Occupational Safety and Health", 3));
+
+            subjects.Add(new Subject("Computer Engineering Drafting and Design", 1));
+
+            subjects.Add(new Subject("Data and Digital Communications", 3));
+
+            subjects.Add(new Subject("Feedback and Control Systems", 3));
+
+            subjects.Add(new Subject("Logic Circuits and Design", 4));
+
+            subjects.Add(new Subject("Software Design", 4));
+
+            subjects.Add(new Subject("Technopreneurship", 3));
+
+            subjects.Add(new Subject("Track Course 1", 3));
+
+            //2ndsem
+
+            subjects.Add(new Subject("Computer Networks and Security", 4));
+
+            subjects.Add(new Subject("CPE Laws and Professional Practice", 2));
+
+            subjects.Add(new Subject("Fundamentals of Mixed Signals and Sensors", 4));
+
+            subjects.Add(new Subject("General Education Elective 3", 3));
+
+            subjects.Add(new Subject("Introduction to HDL", 1));
+
+            subjects.Add(new Subject("Methods of Research", 3));
+
+            subjects.Add(new Subject("Microprocessors", 4));
+
+            subjects.Add(new Subject("Track Course 2", 3));
+
+        }
+
+        //CPE 4TH YEAR
+
+        else if (number == 411)
+
+        {
+
+            subjects.Add(new Subject("Computer Architecture and Organization", 4));
+
+            subjects.Add(new Subject("CPE Comprehensive Evaluation Course 1", 1));
+
+            subjects.Add(new Subject("CPE Practice and Design 1", 2));
+
+            subjects.Add(new Subject("Digital Signal Processing", 4));
+
+            subjects.Add(new Subject("Embedded Systems", 4));
+
+            subjects.Add(new Subject("Engineering Economics", 3));
+
+            subjects.Add(new Subject("Track Course 3", 3));
+
+            //2ndsem
+
+            subjects.Add(new Subject("CPE Practice and Design 2", 4));
+
+            subjects.Add(new Subject("Emerging Technologies in CPE", 3));
+
+            subjects.Add(new Subject("Engineering Management", 3));
+
+            subjects.Add(new Subject("Readings in Philippine History", 3));
+
+            subjects.Add(new Subject("Seminars and Field Trips", 1));
+
+            subjects.Add(new Subject("The Life and Works of Rizal", 3));
+
+        }
+
+        //IE 1ST YEAR
+
+        else if (number == 121)
+
+        {
+
+            subjects.Add(new Subject("Chemistry for Engineers (Lab)", 1));
+
+            subjects.Add(new Subject("Chemistry for Engineers (Lec)", 3));
+
+            subjects.Add(new Subject("Statistical Analysis for IE", 3));
+
+            subjects.Add(new Subject("Engineering Calculus 1", 3));
+
+            subjects.Add(new Subject("Mathematics in The Modern World", 3));
+
+            subjects.Add(new Subject("Movement Enhancement / PATHFit 1-Movement Competency Training", 2));
+
+            subjects.Add(new Subject("National Service Training Program 1", 3));
+
+            subjects.Add(new Subject("Ethics", 3));
+
+            subjects.Add(new Subject("Leadership Values Formation for IEs", 3));
+
+            subjects.Add(new Subject("Understanding the Self", 3));
+
+            //2ndsem
+
+            subjects.Add(new Subject("Purposive Communication", 3));
+
+            subjects.Add(new Subject("Environmental Science and Engineering", 3));
+
+            subjects.Add(new Subject("Computer Aided Design and Drafting", 1));
+
+            subjects.Add(new Subject("Engineering Calculus 2", 3));
+
+            subjects.Add(new Subject("Advanced Statistics 1", 3));
+
+            subjects.Add(new Subject("Fitness Exercises / PATHFit 2-Exercise-based Fitness Activities", 2));
+
+            subjects.Add(new Subject("National Service Training Program 2", 3));
+
+            subjects.Add(new Subject("Physics for Engineers (Lab)", 1));
+
+            subjects.Add(new Subject("Physics for Engineers (Lec)", 3));
+
+            subjects.Add(new Subject("The Contemporary World", 3));
+
+        }
+
+        //IE 2ND YEAR
+
+        else if (number == 221)
+
+        {
+
+            subjects.Add(new Subject("Basic Electrical Engineering, lec", 3));
+
+            subjects.Add(new Subject("Engineering Mechanics", 3));
+
+            subjects.Add(new Subject("Engineering Management", 3));
+
+            subjects.Add(new Subject("Computer Programming 1", 1));
+
+            subjects.Add(new Subject("General Education Elective 1", 3));
+
+            subjects.Add(new Subject("Advanced Statistics 2", 3));
+
+            subjects.Add(new Subject("Industrial Materials and Processes, lec", 2));
+
+            subjects.Add(new Subject("Industrial Materials and Processes, lab", 1));
+
+            subjects.Add(new Subject("Differential Equations", 3));
+
+            subjects.Add(new Subject("PATHFIT-1 / PATHFit 3- Menu of Sports, Dance, Recreation and Martial Arts, Group Exercise, Outdoor and Adventure Activities", 2));
+
+            //2ndsem
+
+            subjects.Add(new Subject("Engineering Economics", 3));
+
+            subjects.Add(new Subject("Computer Programming 2", 1));
+
+            subjects.Add(new Subject("General Education Elective 2", 3));
+
+            subjects.Add(new Subject("Principles of Economics for IE", 3));
+
+            subjects.Add(new Subject("Advanced Mathematics for IE", 3));
+
+            subjects.Add(new Subject("Methods Engineering", 4));
+
+            subjects.Add(new Subject("new Subject(\"PATHFIT-2 / PATHFit 4- Menu of Sports, Dance, Recreation and Martial Arts, Group Exercise, Outdoor and Adventure Activities\", 2),", 2));
+
+            subjects.Add(new Subject("The Life and Works of Rizal", 3));
+
+            subjects.Add(new Subject("Readings in Philippine History", 3));
+
+        }
+
+        //IE 3RD YEAR
+
+        else if (number == 321)
+
+        {
+
+            subjects.Add(new Subject("Financial Accounting for IE", 3));
+
+            subjects.Add(new Subject("Technopreneurship", 3));
+
+            subjects.Add(new Subject("General Education Elective 3", 3));
+
+            subjects.Add(new Subject("Quality Management Systems", 3));
+
+            subjects.Add(new Subject("Ergonomics 1", 3));
+
+            subjects.Add(new Subject("Basic Thermodynamics", 3));
+
+            subjects.Add(new Subject("Science, Technology and Society", 3));
+
+            //2ndsem
+
+            subjects.Add(new Subject("Management Accounting", 3));
+
+            subjects.Add(new Subject("Operations Research 2", 3));
+
+            subjects.Add(new Subject("Ergonomics 2", 3));
+
+            subjects.Add(new Subject("Operations Management for IE", 4));
+
+            subjects.Add(new Subject("Design Project", 3));
+
+            subjects.Add(new Subject("IE Technical Elective 1: Lean Six Sigma", 3));
+
+        }
+
+        //IE 4TH YEAR
+
+        else if (number == 421)
+
+        {
+
+            subjects.Add(new Subject("Systems Simulation, lec", 2));
+
+            subjects.Add(new Subject("Management Information System", 3));
+
+            subjects.Add(new Subject("Supply Chain Management", 3));
+
+            subjects.Add(new Subject("Project Feasibility", 3));
+
+            subjects.Add(new Subject("IE Capstone Research Project", 3));
+
+            subjects.Add(new Subject("Systems Simulation, lab", 1));
+
+            subjects.Add(new Subject("IE Technical Elective 2: Project Management for IE", 3));
+
+            //2ndsem
+
+            subjects.Add(new Subject("Art Appreciation", 3));
+
+            subjects.Add(new Subject("Food Safety and ISO", 3));
+
+            subjects.Add(new Subject("Systems Engineering", 3));
+
+            subjects.Add(new Subject("Industrial Research Project", 3));
+
+            subjects.Add(new Subject("IE Comprehensive Evaluation Course", 2));
+
+            subjects.Add(new Subject("IE Technical Elective 3: Strategic Management for IE", 3));
+
+        }
+
+        return subjects;
+
+    }
+
+    public void EnrollSubjects(string username, int number)
+
+    {
+
+        var user = userDatabase.Find(u => u.Username == username);
+
+        if (user == null)
+
+        {
+
+            Console.WriteLine("User not found.");
+
+            return;
+
+        }
+
+        List<Subject> availableSubjects = GetAvailableSubjects(number);
+
+        if (availableSubjects.Count == 0)
+
+        {
+
+            Console.WriteLine("No available subjects for the specified number.");
+
+            return;
+
+        }
+
+        bool isDone = false;
+
+        while (!isDone)
+
+        {
+
+            Console.WriteLine($"Registered subjects ({user.UnitsTaken} taken): ");
+
+            foreach (var subject in user.EnrolledSubjects)
+
+            {
+
+                Console.WriteLine($"{subject.Name} ({subject.Units} units)");
+
+            }
+
+            Console.WriteLine("\nAvailable Subjects:");
+
+            for (int i = 0; i < availableSubjects.Count; i++)
+
+            {
+
+                Console.WriteLine($"{i + 1}. {availableSubjects[i].Name} ({availableSubjects[i].Units} units)");
+
+            }
+
+            Console.Write("Select a subject (1-" + availableSubjects.Count + ") or type 'Done' to finish: ");
+
+            string input = Console.ReadLine().Trim();
+
+            if (input.Equals("done", StringComparison.OrdinalIgnoreCase))
+
+            {
+
+                Console.Clear();
+
+                isDone = true;
+
+                break;
+
+            }
+
+            if (int.TryParse(input, out int selectedIndex) && selectedIndex >= 1 && selectedIndex <= availableSubjects.Count)
+
+            {
+
+                Subject selectedSubject = availableSubjects[selectedIndex - 1];
+
+                if (user.TempoUnits >= selectedSubject.Units)
+
+                {
+
+                    user.EnrolledSubjects.Add(selectedSubject);
+
+                    user.TempoUnits -= selectedSubject.Units;
+
+                    user.UnitsTaken += selectedSubject.Units;
+
+                    availableSubjects.RemoveAt(selectedIndex - 1);
+
+                    Console.WriteLine($"{selectedSubject.Name} Enrolled successfully. Press Enter to continue.");
+
+                }
+
+                else
+
+                {
+
+                    Console.WriteLine("Insufficient units to enroll in this subject. Press Enter to continue");
+
+                }
+
+            }
+
+            else
+
+            {
+
+                Console.WriteLine("Invalid input. Please select a subject by entering a valid number or type 'Done' to finish.");
+
+            }
+
+            Console.ReadKey();
+
+            Console.Clear();
+
+        }
+
+        SaveUserDatabase();
+
+    }
+
+    public void RemoveSubjects(string username)
+
+    {
+
+        var user = userDatabase.Find(u => u.Username == username);
+
+        if (user != null)
+
+        {
+
+            bool death = false;
+
+            while (!death)
+
+            {
+
+                Console.WriteLine("\nEnrolled Subjects:");
+
+                for (int i = 0; i < user.EnrolledSubjects.Count; i++)
+
+                {
+
+                    Console.WriteLine($"{i + 1}. {user.EnrolledSubjects[i].Name} ({user.EnrolledSubjects[i].Units} units)");
+
+                }
+
+                Console.Write("Select a subject to remove (1-" + user.EnrolledSubjects.Count + ") or type 'Cancel' to go back: ");
+
+                string input = Console.ReadLine().Trim();
+
+                if (input.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+
+                {
+
+                    death = true;
+
+                    Console.Clear();
+
+                    return;
+
+                }
+
+                if (int.TryParse(input, out int selectedIndex) && selectedIndex >= 1 && selectedIndex <= user.EnrolledSubjects.Count)
+
+                {
+
+                    Subject selectedSubject = user.EnrolledSubjects[selectedIndex - 1];
+
+                    user.UnitsTaken -= selectedSubject.Units;
+
+                    user.TempoUnits += selectedSubject.Units;
+
+                    user.EnrolledSubjects.RemoveAt(selectedIndex - 1);
+
+                    Console.WriteLine($"{selectedSubject.Name} removed successfully. Press Any Key To Continue.");
+
+                    Console.ReadKey();
+
+                    Console.Clear();
+
+                }
+
+                else
+
+                {
+
+                    Console.WriteLine("Invalid input. Please select a subject by entering a valid number or type 'Cancel' to go back. press any key to continue.");
+
+                    Console.ReadKey();
+
+                    Console.Clear();
+
+                }
+
+                SaveUserDatabase();
+
+            }
+
+        }
+
+    }
+
+
+    class Mainwrap
+    {
+        public void Start()
+        {
+            Credentials Cred = new Credentials();
+            bool isLoggedIn = false;
+            while (!isLoggedIn)
+            {
+                Console.WriteLine("WELCOME TO CONSOLATRIX COLLEGE OF TOLEDO CITY, INCORPORATED");
+                Console.WriteLine("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-");
+                Console.Write("Sign up - 1 | Login - 2 | Reset ALL Data - 3 | Exit - 0 \nSelect: ");
+                try
+                {
+                    int input = int.Parse(Console.ReadLine());
+                    switch (input)
+                    {
+                        case 1:
+                            {
+                                Console.Write("Sign Up Username: ");
+                                string Name = Console.ReadLine();
+                                Console.Write("Password: ");
+                                string Password = Console.ReadLine();
+                                Cred.Signup(Name, Password);
+                                Console.Clear();
+                                Console.Write("Last Name:");
+                                string lastname = Console.ReadLine();
+
+                                Console.Write("First Name:");
+                                string firstname = Console.ReadLine();
+
+                                Console.Write("Middle Name:");
+                                string middlename = Console.ReadLine();
+
+                                Console.Write("Extension Name:");
+                                string extensionname = Console.ReadLine();
+
+                                Console.Write("Age:");
+                                string age = Console.ReadLine();
+
+                                Console.Write("Gender:");
+                                string gender = Console.ReadLine();
+                                
+                                Console.Write("Nationality:");
+                                string nationality = Console.ReadLine();
+                                break;
+                            }
+                        case 2:
+                            {
+                                Console.Write("Username: ");
+                                string CheckUsername = Console.ReadLine();
+                                Console.Write("Password: ");
+                                String CheckPassword = Console.ReadLine();
+                                if (Cred.Login(CheckUsername, CheckPassword))
+                                {
+                                    continue;
+                                }
+                                else
+                                {
+                                    Console.ReadKey();
+                                    Console.Clear();
+                                    continue;
+                                }
+                            }
+                        case 3:
+                            {
+                                Cred.ResetData();
+                                break;
+                            }
+                        case 0:
+                            {
+                                Console.Write("TO EXIT... Press Any Key To Continue.");
+                                Console.ReadKey();
+                                isLoggedIn = true;
+                                break;
+                            }
+                        default:
+                            {
+                                Console.WriteLine("Invalid Choice. Please Try Again.");
+                                Console.ReadKey();
+                                Console.Clear();
+                                continue;
+                            }
+                    }
+                }
+                catch (Exception)
+                {
+                    Console.Clear();
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Invalid Input. Please try again.");
+                    Console.ResetColor();
+                    Start();
+                }
+            }
+        }
+    }
+
+    class MainProgram
+    {
+        static void Main(string[] args)
+        {
+            Mainwrap mainwrap = new Mainwrap();
+            mainwrap.Start();
+        }
+    }
+}
